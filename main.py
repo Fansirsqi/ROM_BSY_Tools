@@ -5,7 +5,7 @@ class BSYTOOLS:
     def __init__(self,):
         self.tool_path = os.getcwd()
         """工具路径"""
-        self.project_dir = get_folder_list(exclude_folders=['.venv','__pycache__','Tool'])
+        self.project_dir = get_folder_list(exclude_folders=['.venv','__pycache__','Tool','.git'])
         """项目列表"""
         clear()
         self.fun1.name = '解压ROM'
@@ -88,7 +88,7 @@ class BSYTOOLS:
         print()
         ColorPrint.print("=====================现有项目列表===========================",color='cyan')
         print()
-        f_l = get_folder_list(exclude_folders=['.venv','__pycache__','Tool'])
+        f_l = get_folder_list(exclude_folders=['.venv','__pycache__','Tool','.git'])
         # print(f'{os.getcwd()}\{f_l[0]}')
         print()
         ColorPrint.print("============================================================",color='cyan')
