@@ -117,16 +117,15 @@ class BSYTOOLS:
                     br_list.append(_sysytem)
                 if _vendor:
                     br_list.append(_vendor)
+                ask = get_selected('是/否 解压? 1/0:    ')
+                if ask == '1':
+                    clear()
+                    ColorPrint.print('开始解压',color='blue')
+                    work_job(br_list)
+                elif ask == '0':
+                    ColorPrint.print('不执行解压',color='magenta')
                 else:
-                    ask = get_selected('是/否 解压? 1/0:    ')
-                    if ask == '1':
-                        clear()
-                        ColorPrint.print('开始解压',color='blue')
-                        work_job(br_list)
-                    elif ask == '0':
-                        ColorPrint.print('不执行解压',color='magenta')
-                    else:
-                        ColorPrint.print('输入有误！',color='red')
+                    ColorPrint.print('输入有误！',color='red')
                 files = get_file_list(project_path)#重新获取文件列表
                 _sys_dat = check_file(files,'system.new.dat')
                 _ven_dat = check_file(files,'vendor.new.dat')
@@ -148,6 +147,7 @@ class BSYTOOLS:
                 
                 if not _is_sys_img:
                     ColorPrint.print('解压system.new.dat')
+                    print(_sys_trans,_sys_dat,_out_sys)
                     dat_to_img([_sys_trans,_sys_dat,_out_sys])
                     ColorPrint.print('解压system.new.dat 完成',color='green')
                 else:
