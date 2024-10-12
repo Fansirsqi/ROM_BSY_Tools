@@ -1,19 +1,26 @@
-from datetime import datetime, timedelta
+import concurrent.futures
+import glob
 import json
 import os
-from time import sleep
-import glob
-import zipfile
-from ColorPrint import *
-from tqdm import tqdm
 import platform
 import subprocess
-import brotli
-import concurrent.futures
-from concurrent.futures import ThreadPoolExecutor
 import time
+import zipfile
+from concurrent.futures import ThreadPoolExecutor
+from time import sleep
+from Log import Log
+import brotli
+from Cprint import _print
+from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeRemainingColumn
+from tqdm import tqdm
+import asyncio
+from one_word import get_word
+from setting import Setting
 
-def read_file_to_dict(file_path,*tag)-> dict:
+config = Setting()
+
+
+def read_file_to_dict(file_path, *tag) -> dict:
     """读取本地文件转换为可操作的字典
 
     Args:
@@ -35,7 +42,8 @@ def read_file_to_dict(file_path,*tag)-> dict:
         sleep(0.1)
         exit()
 
-def write_dict_to_file(file_path, _data, _mode:str= 'w', _encoding:str='utf-8',*tag):
+
+def write_dict_to_file(file_path, _data, _mode: str = 'w', _encoding: str = 'utf-8', *tag):
     """将数据写入文件
 
     Args:
@@ -45,7 +53,7 @@ def write_dict_to_file(file_path, _data, _mode:str= 'w', _encoding:str='utf-8',*
         _encoding (str): _encoding_
     """
     try:
-        with open(f"{file_path}", mode=_mode, encoding=_encoding) as write_f:
+        with open(f'{file_path}', mode=_mode, encoding=_encoding) as write_f:
             # print(_data)
             # _data = json.loads(_data)
             write_f.write(json.dumps(_data, indent=4, ensure_ascii=False))
@@ -59,72 +67,35 @@ def write_dict_to_file(file_path, _data, _mode:str= 'w', _encoding:str='utf-8',*
         sleep(0.1)
         exit()
 
+
 def trans_str(_str):
-        result = str(_str).replace('(','').replace(')','').replace(',','').replace("'",'').replace('"','').replace(r'\n', '\n').replace(r'\t', '\t').replace(r'\r', '\r')
-        sleep(0.02)
-        return result
+    result = str(_str).replace('(', '').replace(')', '').replace(',', '').replace("'", '').replace('"', '').replace(r'\n', '\n').replace(r'\t', '\t').replace(r'\r', '\r')
+    sleep(0.02)
+    return result
 
-def this_path()-> str:
-        """
-        返回文件所在路径
-        @return:
-        """
-        return os.path.dirname(os.path.abspath(__file__))
 
-class Log:
-    """日志打印模块，包含了一个输入获取模块，保持控制台字体一致
-
-    Returns:
-        (Any): _description_
+def this_path() -> str:
     """
-    font_yellow = '\033[1;33m'# 黄色
-    font_red = '\033[1;31m' # 红色
-    font_blue = '\033[1;34m' # 蓝色
-    font_gray = '\033[1;30m' # 灰色
-    font_green = '\033[1;32m' # 绿色
-    font_purple = '\033[1;35m' # 紫色
-    font_cyan = '\033[1;36m' # 青色
-    font_white = '\033[1;37m' # 白色
-    
-    bg_red = '\033[41m' # 红色 白字
-    bg_green = '\033[42m' # 绿色 深灰字
-    bg_yellow = '\033[43m' # 黄色 灰字
-    bg_blue = '\033[44m' # 蓝色 白字
-    bg_purple = '\033[45m' #紫色 白字
-    bg_cyan = '\033[46m' # 青色 深灰字
-    bg_gray = '\033[47m' # 灰色 深灰字
-    reset = '\033[0m'
-    
-    @staticmethod
-    def warning(*context):
-        """打印黄色警告"""
-        context = trans_str(context)
-        print(f'{Log.font_yellow}⚠️  [WARNING] |\n{context} {Log.reset}') 
-    @staticmethod
-    def error(*context):
-        """打印红色错误警告"""
-        context = trans_str(context)
-        print(f'{Log.font_red}🔴 [ERROR]   |\n{context} {Log.reset}')
-    @staticmethod
-    def info(*context):
-        """打印蓝色信息"""
-        context = trans_str(context)
-        print(f'{Log.font_blue}🔵 [INFO]    |\n{context} {Log.reset}')
-    @staticmethod
-    def success(*context):
-        """打印绿色信息"""
-        context = trans_str(context)
-        print(f'{Log.font_green}🟢 [SUCCESS] |\n{context} {Log.reset}')
-    @staticmethod
-    def debug(*context):
-        """打印灰色信息"""
-        context = trans_str(context)
-        print(f'{Log.font_gray}⚙️  [DEBUG]   |\n{context} {Log.reset}')
-    @staticmethod
-    def input(context):
-        """获取输入信息"""
-        data = input(f'{Log.font_white}✍️  [INPUT]   |\n{context} {Log.reset}')
-        return data
+    返回文件所在路径
+    @return:
+    """
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+def show_banner():
+    """打印标题"""
+    try:
+        with open(f'{config.banner_path}', mode='r', encoding='utf-8') as b:
+            _print(b.read(), color='green')
+            category = 'a'
+            quote = asyncio.run(get_word(category))  # 使用 asyncio.run 调用异步方法
+
+            print('{:>45}'.format(''), end='')
+            _print(f'{config.version_desc} {config.version}', bgcolor='blue', color='white', font_weight='bold')
+            _print(quote, color='yellow', font_weight='bold italic')
+    except FileNotFoundError:
+        _print('Banner 文件未找到', color='red')
+
 
 class DotDict(dict):
     """将字典数据转换成类的形式，数据可以通过.xx的形式访问
@@ -132,6 +103,7 @@ class DotDict(dict):
     Args:
         dict (_type_): _description_
     """
+
     def __init__(self, *args, **kwargs):
         super(DotDict, self).__init__(*args, **kwargs)
 
@@ -141,14 +113,23 @@ class DotDict(dict):
             value = DotDict(value)
         return value
 
-def get_folder_list(exclude_folders=None):
+
+def get_project_list(exclude_folders=[]):
     """获取文件夹"""
-    folder_list = [name for name in os.listdir('.') if os.path.isdir(name) and name not in exclude_folders]
-    count = 1
-    for i in folder_list:
-        ColorPrint.print(f'     {count}.{i}',color='blue')
-        print
-    return folder_list
+    try:
+        PDIR = './Projects/'
+        target_folders: list = os.listdir(PDIR)
+        os.makedirs(PDIR, exist_ok=True)
+        projects = []
+        Log.debug(f'获取项目列表: {PDIR}')
+        for id, name in enumerate(target_folders, start=1):
+            if (os.path.isdir(PDIR + name)) and name not in exclude_folders:
+                Log.debug(f'     {id}. {name}')
+                projects.append(PDIR + name)
+        return projects
+    except Exception as e:
+        _print(f'获取项目列表失败: {e}', color='red')
+
 
 def list_zip_files():
     """列出zip文件"""
@@ -162,38 +143,75 @@ def list_zip_files():
     count = 1
     for file in zip_files:
         file_name = file.split('\\').pop()
-        ColorPrint.print(f'     {count}.{file_name}',color='magenta')
+        _print(f'     {count}.{file_name}', color='magenta')
         print()
     return zip_files
 
+
 def unzip_file(zip_path, extract_path=None):
-    """解压zip"""
-    file_name = zip_path.split('\\').pop()
+    """解压zip文件并显示进度条
+
+    Args:
+        zip_path (str): ZIP文件路径
+        extract_path (str, optional): 解压后的目标文件夹路径. 默认使用ZIP文件名作为解压文件夹名.
+    """
+    file_name = os.path.basename(zip_path)  # 获取文件名
+
     # 如果未指定解压文件夹路径，则默认使用压缩文件名作为文件夹名
-    if not extract_path:
-        extract_path = os.path.splitext(zip_path)[0]  # 使用压缩文件名作为文件夹名
+    if extract_path is None:
+        extract_path = os.getcwd() + './Projects/' + file_name.replace('.zip', '')
+
     # 创建目标文件夹（如果不存在）
     os.makedirs(extract_path, exist_ok=True)
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        file_count = len(zip_ref.namelist())  # 获取zip文件中的文件数量
-        with tqdm(total=file_count, unit='B',desc=f'{extract_path}解压中...',ncols=80,unit_scale=True) as pbar:
-            for file in zip_ref.namelist():
-                zip_ref.extract(file, extract_path)
-                pbar.update(1)  # 更新进度条
-    ColorPrint.print(f'{file_name} 解压完成!')
+
+    # 打开ZIP文件
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            file_list = zip_ref.namelist()  # 缓存文件列表
+            file_count = len(file_list)  # 获取zip文件中的文件数量
+            Log.debug('file_count', file_count)
+
+            # 设置进度条
+            with Progress(
+                TextColumn('[progress.description]{task.description}'),
+                BarColumn(),
+                TaskProgressColumn(),
+                TimeRemainingColumn(),
+            ) as progress:
+                task = progress.add_task(f'[cyan][覆盖]正在解压 {file_name}...', total=file_count)
+
+                # 解压每个文件
+                for file in file_list:
+                    zip_ref.extract(file, extract_path)
+                    progress.update(task, advance=1)  # 更新进度条
+
+        print(f'{file_name} 解压完成!')
+
+    except zipfile.BadZipFile:
+        print(f'错误: {file_name} 不是有效的ZIP文件')
+    except Exception as e:
+        print(f'解压失败: {e}')
+
 
 def clear():
     """清屏"""
     # 返回系统平台/OS的名称，如Linux，Windows，Java，Darwin
     system = platform.system()
-    if (system == u'Windows'):
+    if system == 'Windows':
         os.system('cls')
     else:
         os.system('clear')
 
+
 def get_selected(text='请输选择：'):
     """获取输入信息"""
-    return input(f'\033[1;33m{text}\033[0m')
+    try:
+        _select = str(input(f'\033[1;33m{text}\033[0m')).strip()
+        Log.debug('用户输入:', _select)
+        return _select
+    except KeyboardInterrupt:
+        _print('输入无效，请重新输入', color='red')
+
 
 def get_file_list(project_path):
     search_path = os.path.join(project_path, '*')
@@ -201,18 +219,21 @@ def get_file_list(project_path):
     files = glob.glob(search_path)
     return files
 
-def check_file(files:list,filter=None):
-    """验证system.new.dat.br"""
-    name_list=[]
-    for i in files:
-        file_name = i.split('\\')[-1]
-        name_list.append(file_name)
-    if filter in name_list:
-        ColorPrint.print(f'检测到 {filter} 文件',color='magenta')
-        return files[name_list.index(f'{filter}')]
-    else:
-        ColorPrint.print(f'{filter},文件可能不存在',color='red')
-        return False
+
+def is_sparse_image(file_path):
+    "判断是否稀疏镜像"
+    # 稀疏镜像的魔术数（前4字节）
+    sparse_magic = b'\x3a\xff\x26\xed'
+
+    # 打开文件，读取前4个字节
+    with open(file_path, 'rb') as f:
+        file_header = f.read(4)
+
+    # 判断文件头是否等于稀疏镜像的魔术数
+    if file_header == sparse_magic:
+        return True
+    return False
+
 
 def decompress_br_file(input_file, output_file):
     """解压br->dat"""
@@ -222,7 +243,7 @@ def decompress_br_file(input_file, output_file):
                 decompressor = brotli.Decompressor()
                 total_size = os.path.getsize(input_file)
                 file_name = output_file.split('\\')[-1]
-                with tqdm(total=total_size, unit='B',desc=f'{file_name}解压中...', unit_scale=True, ncols=80) as pbar:
+                with tqdm(total=total_size, unit='B', desc=f'{file_name}解压中...', unit_scale=True, ncols=80) as pbar:
                     for chunk in iter(lambda: f_in.read(4096), b''):
                         decompressed_chunk = decompressor.process(chunk)
                         f_out.write(decompressed_chunk)
@@ -231,6 +252,7 @@ def decompress_br_file(input_file, output_file):
     except Exception as e:
         return f'解压出错 - {e}'
 
+
 def work_job(file_list: list):
     """多线程解压br"""
     # 创建 ThreadPoolExecutor 对象池
@@ -238,7 +260,7 @@ def work_job(file_list: list):
         # 提交解压任务给线程池
         futures_list = []
         for file_path in file_list:
-            outfile = file_path.replace('.br','')
+            outfile = file_path.replace('.br', '')
             future = executor.submit(decompress_br_file, file_path, outfile)
             futures_list.append(future)
         # 获取每个任务的返回值
@@ -249,13 +271,15 @@ def work_job(file_list: list):
             except Exception as e:
                 print(f'Thread raised an exception: {e}')
 
+
 def dat_to_img(arguments=[]):
-    subprocess.call(['./.venv/Scripts/python.exe','sdat2img.py'] + arguments)
+    subprocess.call(['./.venv/Scripts/python.exe', 'sdat2img.py'] + arguments)
+
 
 def simg2img(input_file, output_file):
     """image to img"""
-    ColorPrint.print('Starting conversion, please be patient and wait ...\n开始转换,请耐心等待...',color='yellow',end='')
-    ColorPrint.print('[默认覆盖]',color='red')
+    _print('Starting conversion, please be patient and wait ...\n开始转换,请耐心等待...', color='yellow', end='')
+    _print('[默认覆盖]', color='red')
     start_time = time.time()  # 记录开始时间
     try:
         # 调用命令行执行 img2simg.exe
@@ -263,14 +287,15 @@ def simg2img(input_file, output_file):
         elapsed_time = time.time() - start_time  # 计算耗时
         file = input_file.split('/')[-1]
         file2 = output_file.split('/')[-1]
-        ColorPrint.print(f'Conversion completed successfully!\n{file} 转换 {file2}成功完成!\n耗时: {elapsed_time:.2f} 秒', color='green')
+        _print(f'Conversion completed successfully!\n{file} 转换 {file2}成功完成!\n耗时: {elapsed_time:.2f} 秒', color='green')
     except subprocess.CalledProcessError as e:
-        ColorPrint.print(f'Error occurred: {e}',color='red')
-        
+        _print(f'Error occurred: {e}', color='red')
+
+
 def img2simg(input_file, output_file):
     """img to raw image"""
-    ColorPrint.print('Starting conversion, please be patient and wait ...\n开始转换,请耐心等待...',color='yellow',end='')
-    ColorPrint.print('[默认覆盖]',color='red')
+    _print('Starting conversion, please be patient and wait ...\n开始转换,请耐心等待...', color='yellow', end='')
+    _print('[默认覆盖]', color='red')
     start_time = time.time()  # 记录开始时间
     try:
         # 调用命令行执行 img2simg.exe
@@ -278,6 +303,6 @@ def img2simg(input_file, output_file):
         elapsed_time = time.time() - start_time  # 计算耗时
         file = input_file.split('/')[-1]
         file2 = output_file.split('/')[-1]
-        ColorPrint.print(f'Conversion completed successfully!\n{file} 转换 {file2}成功完成!\n耗时: {elapsed_time:.2f} 秒', color='green')
+        _print(f'Conversion completed successfully!\n{file} 转换 {file2}成功完成!\n耗时: {elapsed_time:.2f} 秒', color='green')
     except subprocess.CalledProcessError as e:
-        ColorPrint.print(f'Error occurred: {e}',color='red')
+        _print(f'Error occurred: {e}', color='red')

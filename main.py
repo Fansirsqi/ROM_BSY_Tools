@@ -1,166 +1,170 @@
-from ColorPrint import *
-from utils import *
+from Cprint import _print
+from utils import get_project_list, clear, get_selected, list_zip_files, unzip_file, get_file_list, work_job, dat_to_img, show_banner
+import os
+
 
 class BSYTOOLS:
-    def __init__(self,):
-        self.tool_path = os.getcwd()
-        """工具路径"""
-        self.project_dir = get_folder_list(exclude_folders=['.venv','__pycache__','Tool','.git'])
-        """项目列表"""
+    def __init__(self):
+        self.tool_path = os.getcwd()  # 工具路径
+        self.project_dir = get_project_list(exclude_folders=['.venv', '__pycache__', 'Tool', '.git'])  # 项目列表
+
         clear()
-        self.fun1.name = '解压ROM'
-        self.fun2.name = '待定'
-        self.fun3.name = '待定'
-        self.fun4.name = '待定'
-        self.fun5.name = '待定'
-        self.fun6.name = '待定'
-        ColorPrint.print(self.tool_path)
-        self.print_title()
-        self.start()
+        self.function_names = [
+            ('解压ROM', self.fun1),
+            ('新建项目', self.fun2),
+            ('删除项目', self.fun3),
+            ('待定', self.fun4),
+            ('待定', self.fun5),
+            ('待定', self.fun6),
+        ]
+        _print(self.tool_path)
 
+        self.main_menu()
 
+    # 定义一个装饰器
     @staticmethod
-    def fun1():
-        clear()
-        ColorPrint.print("fun1")
-        file_list = list_zip_files()
-        select = get_selected('选择你要解压的ROM:')
-        file_path = file_list[int(select)-1]
-        # ColorPrint.print(f'传入的文件是:{file_list[int(select)-1]}')
-        unzip_file(file_path)
+    def tips(func):
+        """装饰器，用于在函数执行前显示提示信息"""
 
-    @staticmethod
-    def fun2():
-        ColorPrint.print("fun2")
+        def wrapper(*args, **kwargs):
+            clear()
+            _print('\n00 返回上一层', color='yellow')
+            _print('================================================================', color='cyan')
+            # 执行原始函数
+            return func(*args, **kwargs)
 
-    @staticmethod
-    def fun3():
-        ColorPrint.print("fun3")
+        return wrapper
 
-    @staticmethod
-    def fun4():
-        ColorPrint.print("fun4")
-
-    @staticmethod
-    def fun5():
-        ColorPrint.print("fun5")
-
-    @staticmethod
-    def fun6():
-        ColorPrint.print("fun6")
-
-    @staticmethod
-    def print_title():
-        """打印标题"""
-        ColorPrint.print("\033[1;31m============================================================")
-        ColorPrint.print(""" ______  ____  ____  ______       _________            __   
-|_   _ \|_  _||_  _.' ____ \     |  _   _  |          [  |  
-  | |_) | \ \  / / | (___ \______|_/ | | \_.--.   .--. | |  
-  |  __'.  \ \/ /   _.____`|______|  | | / .'`\ / .'`\ | |  
- _| |__) _ _|  |_ _| \____) |       _| |_| \__. | \__. | |  
-|_______(_|______(_)\______.'      |_____|'.__.' '.__.[___] """,color="green")
-        ColorPrint.print("\033[1;31m============================================================")
-
-    def start(self):
-        """开始
-        """
-        ColorPrint.print("=====================选择功能菜单===========================",color='cyan')
-        funcdict = {
-            "fun1": self.fun1,
-            "fun2": self.fun2,
-            "fun3": self.fun3,
-            "fun4": self.fun4,
-            "fun5": self.fun5,
-            "fun6": self.fun6,
-        }
-        for i in range(len(funcdict)//2):
-            print()
-            if i == 0:
-                a=11
-                b=22
-            elif i == 1:
-                a=33
-                b=44
-            elif i == 2:
-                a=55
-                b=66
-            ColorPrint.print('             {}.{:<20}{}.{:<20}'.format(a,list(funcdict.values())[i].name,b,list(funcdict.values())[i+1].name),color='green')
-        print()
-        ColorPrint.print("=====================现有项目列表===========================",color='cyan')
-        print()
-        f_l = get_folder_list(exclude_folders=['.venv','__pycache__','Tool','.git'])
-        # print(f'{os.getcwd()}\{f_l[0]}')
-        print()
-        ColorPrint.print("============================================================",color='cyan')
+    @tips
+    def fun1(self):
+        """解压ROM"""
         try:
-            fund = {
-            '11':self.fun1,
-            '22':self.fun2,
-            '33':self.fun3,
-            '44':self.fun4,
-            '55':self.fun5,
-            '66':self.fun6,
-            }
-            print()
-            select = get_selected()
-            if select in fund.keys():
-                fund[select]()
+            _print('执行功能：解压ROM', color='green')
+            file_list = list_zip_files()
+
+            if not file_list:
+                _print('未找到任何ZIP文件', color='red')
+
+            # 显示文件列表
+            _print('可选择的ZIP文件:', color='cyan')
+            for index, file in enumerate(file_list, start=1):
+                _print(f'{index}. {file}', color='white', font_weight='bold')
+
+            _select = get_selected('选择你要解压的ROM:')
+
+            if _select == '00':
+                self.main_menu()
             else:
-                project_path = f'{os.getcwd()}\{self.project_dir[int(select)-1]}'
-                # print(project_path)
-                clear()
-                files = get_file_list(project_path)
-                _sysytem = check_file(files,'system.new.dat.br')
-                _vendor = check_file(files,'vendor.new.dat.br')
-                br_list = []
-                if _sysytem:
-                    br_list.append(_sysytem)
-                if _vendor:
-                    br_list.append(_vendor)
-                ask = get_selected('是/否 解压? 1/0:    ')
-                if ask == '1':
-                    clear()
-                    ColorPrint.print('开始解压',color='blue')
-                    work_job(br_list)
-                elif ask == '0':
-                    ColorPrint.print('不执行解压',color='magenta')
-                else:
-                    ColorPrint.print('输入有误！',color='red')
-                files = get_file_list(project_path)#重新获取文件列表
-                _sys_dat = check_file(files,'system.new.dat')
-                _ven_dat = check_file(files,'vendor.new.dat')
-                _sys_trans = check_file(files,'system.transfer.list')
-                _ven_trans = check_file(files,'vendor.transfer.list')
-                if not _sys_trans:
-                    ColorPrint.print(f'{_sys_dat}无法解压，找不到\n{_sys_trans}',color='red')
-                if not _ven_trans:
-                    ColorPrint.print(f'{_ven_dat}无法解压，找不到\n{_ven_trans}',color='red')
-                    
-                if _sys_dat:
-                    _out_sys = _sys_dat.replace('new.dat','img')
-                if _ven_dat:
-                    _out_ven = _ven_dat.replace('new.dat','img')
-                
-                files = get_file_list(project_path)#重新获取文件列表
-                _is_sys_img = check_file(files,'system.img')
-                _is_ven_img = check_file(files,'vendor.img')
-                
-                if not _is_sys_img:
-                    ColorPrint.print('解压system.new.dat')
-                    print(_sys_trans,_sys_dat,_out_sys)
-                    dat_to_img([_sys_trans,_sys_dat,_out_sys])
-                    ColorPrint.print('解压system.new.dat 完成',color='green')
-                else:
-                    ColorPrint.print('system.img 已存在-不解压')
-                    
-                if not _is_ven_img:
-                    ColorPrint.print('解压vendor.new.dat')
-                    dat_to_img([_ven_trans,_ven_dat,_out_ven])
-                    ColorPrint.print('解压vendor.new.dat 完成',color='green')
-                else:
-                    ColorPrint.print('vendor.img 已存在-不解压')
+                # 验证用户选择是否有效
+                try:
+                    selected_index = int(_select) - 1
+                    if 0 <= selected_index < len(file_list):
+                        file_path = file_list[selected_index]
+                        unzip_file(file_path)
+                    else:
+                        _print('选择的索引超出范围！', color='red')
+                except ValueError:
+                    _print('无效选择！请选择一个有效的数字。', color='red')
         except Exception as e:
-            ColorPrint.print(f"\n{e}\n程序被用户终止！",color='red')
+            _print(f'发生错误: {e}', color='red')  # 捕获其他可能的异常并输出错误信息
+
+    def fun2(self):
+        _print('待定功能2', color='yellow')
+
+    def fun3(self):
+        _print('待定功能3', color='yellow')
+
+    def fun4(self):
+        _print('待定功能4', color='yellow')
+
+    def fun5(self):
+        _print('待定功能5', color='yellow')
+
+    def fun6(self):
+        _print('待定功能6', color='yellow')
+
+    def show_projects(self):
+        """显示项目列表"""
+        _print('=======================项目列表=============================', color='cyan')
+        _print()
+        for idx, project in enumerate(self.project_dir, start=1):
+            project_name = os.path.basename(project)
+            _print(f'{idx:^3}. {project_name:<20}', color='magenta', font_weight='blod')
+            _print()
+
+    def show_functions(self):
+        """显示功能菜单"""
+        _print('=======================工具选择菜单=============================', color='cyan')
+        _print()
+
+        # 定义颜色列表
+        colors = ['red', 'green', 'yellow', 'blue', 'magenta', 'cyan']
+
+        for idx in range(0, len(self.function_names), 2):
+            # 奇数项索引和功能名称
+            left_index = (idx + 1) * 11
+            left_name = self.function_names[idx][0]
+            left_color = colors[idx % len(colors)]  # 从颜色列表中循环取颜色
+
+            # 偶数项索引和功能名称
+            if idx + 1 < len(self.function_names):
+                right_index = (idx + 2) * 11
+                right_name = self.function_names[idx + 1][0]
+                right_color = colors[(idx + 1) % len(colors)]  # 从颜色列表中循环取颜色
+            else:
+                right_index = ''
+                right_name = ''
+                right_color = ''  # 没有偶数项时，不使用颜色
+
+            # 打印功能项，并确保对齐
+            _print(f'{left_index:>10}. {left_name:<20}', color=left_color, end='')  # 打印奇数项，不换行
+            if right_name:
+                _print(f'{right_index:>10}. {right_name}\n', color=right_color)  # 打印偶数项
+            else:
+                _print()  # 如果没有偶数项，则换行
+
+        _print('================================================================', color='cyan')
+
+    @tips
+    def handle_project_selection(self, select):
+        """处理项目选择"""
+        try:
+            project_path = f'{os.getcwd()}\\{self.project_dir[int(select) - 1]}'
+
+            files = get_file_list(project_path)
+            _print(f'项目路径: {project_path}')
+            _print(f'文件列表: {files}')
+            _select = get_selected('请选择功能或项目:').strip()
+            match _select:
+                case '00':
+                    self.main_menu()
+        except Exception as e:
+            _print(f'发生错误: {e}', color='red')
+
+    def main_menu(self):
+        """开始菜单交互"""
+        try:
+            show_banner()
+            self.show_projects()
+            self.show_functions()
+            # 功能字典，映射用户输入到对应的功能函数
+            func_dict = {'11': self.fun1, '22': self.fun2, '33': self.fun3, '44': self.fun4, '55': self.fun5, '66': self.fun6}
+            # 获取用户输入并清理空白字符
+            _print('{:>10}'.format('00.退出') + '{:>10}'.format('01.设置') + '{:>10}'.format('02.下载') + '\n', color='red', font_weight='blod')
+            select = get_selected('请选择功能或项目:').strip()
+
+            match select:
+                case '11' | '22' | '33' | '44' | '55' | '66':
+                    func_dict[select]()  # 直接调用对应的功能函数
+                case '00':
+                    _print('退出程序', color='blue')
+                case _:
+                    _print(select)
+                    self.handle_project_selection(select)
+        except KeyboardInterrupt as e:
+            _print(f'程序已手动退出 {e}', color='red')
+        except AttributeError as e:
+            _print(f'发生错误: {e}', color='red')
 
 
 BSYTOOLS()
