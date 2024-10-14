@@ -5,81 +5,34 @@ import os
 import platform
 import subprocess
 import time
-import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
 from Log import Log
 import brotli
 from Cprint import _print
-from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeRemainingColumn
 from tqdm import tqdm
 import asyncio
 from one_word import get_word
 from setting import Setting
+import fnmatch
 
 config = Setting()
 
 
-def read_file_to_dict(file_path, *tag) -> dict:
-    """读取本地文件转换为可操作的字典
-
-    Args:
-        file_path (str): 文件路径
-
-    Returns:
-        _type_: _description_
-    """
+def comming_soon(*tag):
+    "施工中"
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            data = eval(f.read())
-        Log.success(f'✨ 配置文件 {file_path} 读取成功')
-        sleep(0.1)
-        return data
+        if tag:
+            raise NotImplementedError(f'{tag}🚧  施工中')
+        raise NotImplementedError('🚧  施工中')
     except Exception as e:
-        t = trans_str(tag)
-        Log.error(f'[{t}] 读取错误: {e}')
-        Log.error(f'请确认文件： {file_path} 是否存在？？')
-        sleep(0.1)
-        exit()
-
-
-def write_dict_to_file(file_path, _data, _mode: str = 'w', _encoding: str = 'utf-8', *tag):
-    """将数据写入文件
-
-    Args:
-        file_path (_type_): 文件名_\n
-        _data (_type_): 数据内容_\n
-        _mode (str): _with open mode_\n
-        _encoding (str): _encoding_
-    """
-    try:
-        with open(f'{file_path}', mode=_mode, encoding=_encoding) as write_f:
-            # print(_data)
-            # _data = json.loads(_data)
-            write_f.write(json.dumps(_data, indent=4, ensure_ascii=False))
-            write_f.close()
-        Log.success(f'✨ 配置文件 {file_path} 写入成功')
-        sleep(0.1)
-    except Exception as e:
-        t = trans_str(tag)
-        Log.error(f'🔴 [{t}]写入错误: {e}')
-        Log.error(f'🔴 请确认文件: {file_path} 是否存在??')
-        sleep(0.1)
-        exit()
+        _print(f'发生错误: {e}', color='red')
 
 
 def trans_str(_str):
     result = str(_str).replace('(', '').replace(')', '').replace(',', '').replace("'", '').replace('"', '').replace(r'\n', '\n').replace(r'\t', '\t').replace(r'\r', '\r')
     sleep(0.02)
     return result
-
-
-def this_path() -> str:
-    """
-    返回文件所在路径
-    @return:
-    """
-    return os.path.dirname(os.path.abspath(__file__))
 
 
 def show_banner():
@@ -91,106 +44,66 @@ def show_banner():
             quote = asyncio.run(get_word(category))  # 使用 asyncio.run 调用异步方法
 
             print('{:>45}'.format(''), end='')
-            _print(f'{config.version_desc} {config.version}', bgcolor='blue', color='white', font_weight='bold')
-            _print(quote, color='yellow', font_weight='bold italic')
+            _print(f'{config.version_desc} {config.version}', bgcolor='blue', color='white', font_weight='bold', end='')
+            print('{:<10}'.format(''))
+            _print(quote, color='white', font_weight='bold italic')
     except FileNotFoundError:
         _print('Banner 文件未找到', color='red')
 
 
-class DotDict(dict):
-    """将字典数据转换成类的形式，数据可以通过.xx的形式访问
+def get_project_list(exclude_folders=None) -> list:
+    """获取项目列表"""
+    if exclude_folders is None:
+        exclude_folders = []
 
-    Args:
-        dict (_type_): _description_
-    """
+    PDIR = './Projects/'
+    projects = []
 
-    def __init__(self, *args, **kwargs):
-        super(DotDict, self).__init__(*args, **kwargs)
-
-    def __getattr__(self, key):
-        value = self[key]
-        if isinstance(value, dict):
-            value = DotDict(value)
-        return value
-
-
-def get_project_list(exclude_folders=[]):
-    """获取文件夹"""
     try:
-        PDIR = './Projects/'
-        target_folders: list = os.listdir(PDIR)
+        # 创建目录（如果不存在）
         os.makedirs(PDIR, exist_ok=True)
-        projects = []
+    except OSError as os_error:
+        _print(f'文件操作失败: {os_error}', color='red')
+        return []
+
+    try:
         Log.debug(f'获取项目列表: {PDIR}')
-        for id, name in enumerate(target_folders, start=1):
-            if (os.path.isdir(PDIR + name)) and name not in exclude_folders:
-                Log.debug(f'     {id}. {name}')
-                projects.append(PDIR + name)
+
+        # 使用列表推导式提高效率
+        projects = [os.path.join(PDIR, folder) for folder in os.listdir(PDIR) if os.path.isdir(os.path.join(PDIR, folder)) and folder not in exclude_folders]
+
+        # 仅在有项目时打印日志
+        for id, folder in enumerate(projects, start=1):
+            Log.debug(f'  {id}. {folder}')
+
         return projects
+
     except Exception as e:
-        _print(f'获取项目列表失败: {e}', color='red')
+        _print(f'获取项目列表时发生错误: {e}', color='red')
+        return []
 
 
-def list_zip_files():
-    """列出zip文件"""
+def list_rom_files(file_types=('*.zip', '*.gz', '*.tar')):
+    """列出指定后缀的文件"""
     # 获取当前工作目录
     current_dir = os.getcwd()
-    # 构建要匹配的文件路径模式
-    file_pattern = os.path.join(current_dir, '*.zip')
-    # 使用glob模块获取匹配的文件列表
-    zip_files = glob.glob(file_pattern)
+
+    # 获取所有文件和目录
+    all_files = os.listdir(current_dir)
+
+    # 过滤匹配指定类型的文件
+    zip_files = []
+    for file_type in file_types:
+        zip_files.extend(fnmatch.filter(all_files, file_type))
+
     # 打印文件列表
-    count = 1
-    for file in zip_files:
-        file_name = file.split('\\').pop()
-        _print(f'     {count}.{file_name}', color='magenta')
-        print()
+    if not zip_files:
+        _print('未找到任何匹配的文件', color='red')
+    else:
+        for count, file in enumerate(zip_files, start=1):
+            _print(f'  {count}. {file}', color='magenta')
+
     return zip_files
-
-
-def unzip_file(zip_path, extract_path=None):
-    """解压zip文件并显示进度条
-
-    Args:
-        zip_path (str): ZIP文件路径
-        extract_path (str, optional): 解压后的目标文件夹路径. 默认使用ZIP文件名作为解压文件夹名.
-    """
-    file_name = os.path.basename(zip_path)  # 获取文件名
-
-    # 如果未指定解压文件夹路径，则默认使用压缩文件名作为文件夹名
-    if extract_path is None:
-        extract_path = os.getcwd() + './Projects/' + file_name.replace('.zip', '')
-
-    # 创建目标文件夹（如果不存在）
-    os.makedirs(extract_path, exist_ok=True)
-
-    # 打开ZIP文件
-    try:
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            file_list = zip_ref.namelist()  # 缓存文件列表
-            file_count = len(file_list)  # 获取zip文件中的文件数量
-            Log.debug('file_count', file_count)
-
-            # 设置进度条
-            with Progress(
-                TextColumn('[progress.description]{task.description}'),
-                BarColumn(),
-                TaskProgressColumn(),
-                TimeRemainingColumn(),
-            ) as progress:
-                task = progress.add_task(f'[cyan][覆盖]正在解压 {file_name}...', total=file_count)
-
-                # 解压每个文件
-                for file in file_list:
-                    zip_ref.extract(file, extract_path)
-                    progress.update(task, advance=1)  # 更新进度条
-
-        print(f'{file_name} 解压完成!')
-
-    except zipfile.BadZipFile:
-        print(f'错误: {file_name} 不是有效的ZIP文件')
-    except Exception as e:
-        print(f'解压失败: {e}')
 
 
 def clear():
