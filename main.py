@@ -2,7 +2,7 @@ import os
 from time import sleep
 from Cprint import _print
 from utils import clear, get_file_list, get_project_list, get_selected, list_rom_files, show_banner, comming_soon
-
+from extract_rom import unzip_file
 
 class BSYTOOLS:
     def __init__(self):
@@ -46,6 +46,13 @@ class BSYTOOLS:
             return result
 
         return wrapper
+
+    @staticmethod
+    def show_menu_name(menu_name=None):
+        """显示菜单名称"""
+        if not menu_name:
+            return print()
+        return _print(f'  -> {menu_name}\n', color='#FF5733', bgcolor='#FFFF33')
 
     # 计算填充的方法
     @staticmethod
@@ -109,12 +116,14 @@ class BSYTOOLS:
     def fun2(self):
         """显示项目列表"""
         try:
-            _print('->项目列表', color='yellow', font_weight='bold')
+            self.show_menu_name('项目列表')
+            _print(self.project_dir)
             _print()
             for idx, project in enumerate(self.project_dir, start=1):
                 project_name = os.path.basename(project)
-                _print(f'{idx:>3}. {project_name:<20}', color='magenta', bgcolor=None, font_weight='blod')
+                _print(f'{idx:>3}. {project_name:<20}', color='#33FFFF', bgcolor=None, font_weight='blod')
                 _print()
+                
         except Exception as e:
             _print(f'发生错误: {e}')
 
@@ -172,8 +181,15 @@ class BSYTOOLS:
         set_width = 10  # 设置索引部分的宽度
 
         # 定义颜色列表
-        colors = ['red', 'green', 'yellow', 'blue', 'magenta', 'cyan']
-        _print('->功能菜单\n', color='yellow', font_weight='bold')
+        colors = [
+            '#33FF57',
+            '#33FFFF',
+            '#3357FF',
+            '#FF5733',
+            '#FF9900',
+            '#FF33FF',
+        ]
+        self.show_menu_name('功能菜单')
         for idx in range(0, len(self.function_names), 2):
             # 奇数项索引和功能名称
             left_index = (idx + 1) * 11
