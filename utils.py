@@ -1,7 +1,7 @@
 import concurrent.futures
 import glob
-import json
 import os
+import sys
 import platform
 import subprocess
 import time
@@ -12,11 +12,21 @@ import brotli
 from Cprint import _print
 from tqdm import tqdm
 import asyncio
-from one_word import get_word
-from setting import Setting
+from one_word import get_shici
+from setting import config
 import fnmatch
 
-config = Setting()
+
+def set_terminal_title(title):
+    if os.name == 'nt':  # Windows
+        os.system(f'title {title}')
+    else:  # Linux / macOS
+        sys.stdout.write(f'\033]0;{title}\007')
+        sys.stdout.flush()
+
+
+# 调用函数设置终端标题
+set_terminal_title('My Custom Terminal Title')
 
 
 def comming_soon(*tag):
@@ -41,7 +51,7 @@ def show_banner():
         with open(f'{config.banner_path}', mode='r', encoding='utf-8') as b:
             _print(b.read(), color='green')
             category = 'a'
-            quote = asyncio.run(get_word(category))  # 使用 asyncio.run 调用异步方法
+            quote = asyncio.run(get_shici())  # 使用 asyncio.run 调用异步方法
 
             print('{:>45}'.format(''), end='')
             _print(f'{config.version_desc} {config.version}', bgcolor='blue', color='white', font_weight='bold', end='')
