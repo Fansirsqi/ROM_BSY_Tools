@@ -15,7 +15,7 @@ from datetime import datetime
 
 logger.remove()
 # 配置终端输出
-logger.add(sys.stdout, colorize=True, level='DEBUG', format='<y><b>{time:MM-DD HH:mm:ss}</b></y> <level><w>[</w>{level:^9}<w>]</w></level> | <level>{message}</level>  |  <b>{file}</b> <y>{line}</y>')
+logger.add(sys.stdout, colorize=True, level='INFO', format='<y><b>{time:MM-DD HH:mm:ss}</b></y> <level><w>[</w>{level:^9}<w>]</w></level> | <level>{message}</level>  |  <b>{file}</b> <y>{line}</y>')
 # 配置文件输出
 logger.add('./logs.log', level='DEBUG', encoding='utf-8', format='{time:MM-DD HH:mm:ss} [{level}] {message} ', rotation='1 day', retention='7 days', mode='w')
 
