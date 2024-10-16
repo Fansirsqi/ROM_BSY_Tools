@@ -35,13 +35,13 @@ async def get_word(category=None):
             response = await client.get(url, params=params)
             if response.status_code == 200:
                 data = response.json()
-                sentence = '\n' + data.get('hitokoto') + '\n' + '{:>35}'.format('') + '----Re: ' + data.get('from') + '\n'
+                sentence = '\n' + data.get('hitokoto') + '\n' + '{:>40}'.format('') + '----Re: ' + data.get('from') + '\n'
                 # config.
                 return sentence
             else:
                 return f'Error: Received response code {response.status_code}'
         except Exception:
-            sentence = '\n知否知否，应是绿肥红瘦\n' + '{:>35}'.format('') + '----Re: ' + '如梦令' + '\n'
+            sentence = '\n知否知否，应是绿肥红瘦\n' + '{:>40}'.format('') + '----Re: ' + '如梦令' + '\n'
             return sentence
 
 
@@ -83,12 +83,12 @@ async def get_shici():
                 content = f"{sentence_data.get('content')}"
                 origin = sentence_data.get('origin')
                 title = f"{origin.get('title')}"
-                sentence = f'{content}\n{"":>35}----Re: {title}\n'
+                sentence = f'\n{content}\n{"":>40}----Re: {title}\n'
                 return sentence
 
         except Exception as e:
             Log.debug(e)
-            sentence = '\n知否知否，应是绿肥红瘦\n' + '{:>35}'.format('') + '----Re: ' + '如梦令' + '\n'
+            sentence = '\n知否知否，应是绿肥红瘦\n' + '{:>40}'.format('') + '----Re: ' + '如梦令' + '\n'
             return sentence
 
 
