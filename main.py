@@ -1,13 +1,16 @@
 import os
 from time import sleep
 from Cprint import _print
-from utils import clear, get_file_list, get_project_list, get_selected, list_rom_files, show_banner, comming_soon
+from utils import clear, get_file_list, get_project_list, get_selected, list_rom_files, show_banner, comming_soon, set_terminal_title
 from extract_rom import unzip_file
+
 
 class BSYTOOLS:
     def __init__(self):
         self.tool_path = os.getcwd()  # 工具路径
         self.project_dir: list = get_project_list(exclude_folders=['.venv', '__pycache__', 'Tool', '.git'])  # 项目列表
+        # 设置终端标题
+        set_terminal_title('ROM-BSY-TOOLS')
 
         clear()
         self.function_names = [
@@ -123,7 +126,7 @@ class BSYTOOLS:
                 project_name = os.path.basename(project)
                 _print(f'{idx:>3}. {project_name:<20}', color='#33FFFF', bgcolor=None, font_weight='blod')
                 _print()
-                
+
         except Exception as e:
             _print(f'发生错误: {e}')
 
