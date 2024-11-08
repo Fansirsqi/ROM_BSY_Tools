@@ -102,8 +102,6 @@ def _unzip_7z(seven_zip_path, extract_path):
     except Bad7zFile:
         print(f'错误: {os.path.basename(seven_zip_path)} 不是有效的7Z文件')
 
-
-
 def compress_file(input_path, archive_path=None, format='zip', compression_level=5, delete_source=False):
     """
     压缩文件或文件夹，支持多种压缩格式（zip, tar, 7z），并显示进度条
