@@ -1,12 +1,14 @@
 import os
 from time import sleep
 from Cprint import _print
-from utils import clear, get_file_list, get_project_list, get_selected, list_rom_files, show_banner, comming_soon, set_terminal_title
+from utils import clear, get_file_list, get_project_list, get_selected, show_rom_files, show_banner, comming_soon, set_terminal_title
 from extract_rom import unzip_file
+from Log import Log
 
 
 class BSYTOOLS:
     def __init__(self):
+        self.cache = None
         self.tool_path = os.getcwd()  # 工具路径
         self.project_dir: list = get_project_list(exclude_folders=['.venv', '__pycache__', 'Tool', '.git'])  # 项目列表
         # 设置终端标题
@@ -70,62 +72,54 @@ class BSYTOOLS:
         text_width = wcswidth(text)  # 计算文本的实际宽度
         return total_width - text_width
 
-    @tips
     def fun1(self):
         """解压ROM"""
-
         while True:
+            clear()
+            _print('\n00 返回上一层\n', color='yellow', font_weight='bold')
+            _print('\n==========请输入选择对应功能前的数字以选择对应功能==========\n', color='yellow')
+            # 执行原始函数
             try:
-                file_list = list_rom_files()
-
+                file_list = show_rom_files()
                 if not file_list:
                     _print(f'\n!!未找到任何刷机包,请将刷机包移至工具[{self.tool_path}]目录后再执行此功能\n', color='red')
                     input('按任意键返回至主菜单...')
                     sleep(3)
                     return self.main_menu()  # 如果没有ZIP文件，则返回主菜单
 
-                _print('可选择的ZIP文件:', color='cyan')
-                for index, file in enumerate(file_list, start=1):
-                    _print(f'{index}. {file}', color='white', font_weight='bold')
-
-                _select = get_selected('请选择:')
-
-                if _select == '00':  # 返回上一层
+                # 使用新的方法进行选择
+                select_index = get_selected()
+                if select_index == '00':
                     return self.main_menu()
-
-                # 检查输入是否有效
-                try:
-                    selected_index = int(_select) - 1
-                    if 0 <= selected_index < len(file_list):
-                        file_path = file_list[selected_index]
-                        unzip_file(file_path)
-                        _print('解压完成！', color='green')
-                        sleep(2)
-                        return self.main_menu()  # 解压完成后返回主菜单
-                    else:
-                        _print('输入不合法！请重新选择:', color='red')
-                        sleep(2)
-
-                except ValueError:
-                    _print('无效输入！请输入有效数字:', color='red')
-                    sleep(2)
-
+                unzip_file(file_list[int(select_index) - 1])
+                _print('解压完成！', color='green')
+                get_selected('按任意键返回至主菜单...')
+                return self.main_menu()  # 解压完成后返回主菜单
+            except IndexError as e:
+                _print(f'发生错误1: {e}', color='#EE3131')  # 捕获其他可能的异常并输出错误信息
+                get_selected('按任意键重新进行选择...')
+                return self.fun1()
             except Exception as e:
-                _print(f'发生错误: {e}', color='red')  # 捕获其他可能的异常并输出错误信息
-                sleep(3)
-                return self.main_menu()  # 出现异常时返回主菜单
+                _print(f'发生错误2: {e}', color='#EE3131')  # 捕获其他可能的异常并输出错误信息
+                get_selected('按任意键重新进行选择...')
+                return self.fun1()
 
     @tips
     def fun2(self):
         """显示项目列表"""
         try:
             self.show_menu_name('项目列表')
-            _print(self.project_dir)
+            # _print(self.project_dir)
+            # _print()
+            # 显示列表
+            for idx, item in enumerate(self.project_dir, start=1):
+                _print(f'{idx:>3}. {item}', color='#33FFFF', bgcolor=None, font_weight='blod')
             _print()
-            for idx, project in enumerate(self.project_dir, start=1):
-                project_name = os.path.basename(project)
-                _print(f'{idx:>3}. {project_name:<20}', color='#33FFFF', bgcolor=None, font_weight='blod')
-                _print()
+            # 使用新的方法进行选择
+            selected_project_index = self.selector(len(self.project_dir), '请选择一个项目:', return_func=self.main_menu)
+
+            if selected_project_index:
+                _print(f'你选择了: {selected_project_index}')
 
         except Exception as e:
             _print(f'发生错误: {e}')
@@ -282,10 +276,16 @@ class BSYTOOLS:
     def main_menu(self):
         """开始菜单交互"""
         try:
-            show_banner()
+            clear()
+            self.cache = show_banner(self.cache)
             self.show_functions()
             # 功能字典，映射用户输入到对应的功能函数
             func_dict = {'11': self.fun1, '22': self.fun2, '33': self.fun3, '44': self.fun4, '55': self.fun5, '66': self.fun6}
+
+            _print('\n00 退出程序\n', color='yellow', font_weight='bold')
+            # 执行原始函数
+            # _print('\n==========请输入选择对应功能前的数字以选择对应功能==========\n', color='yellow')
+
             # 获取用户输入并清理空白字符
             select = get_selected('请选择功能或项目:').strip()
 
@@ -294,6 +294,7 @@ class BSYTOOLS:
                     func_dict[select]()  # 直接调用对应的功能函数
                 case '00':
                     _print('退出程序', color='blue')
+                    exit(0)
                 case _:
                     _print(select)
                     self.handle_project_selection(select)
