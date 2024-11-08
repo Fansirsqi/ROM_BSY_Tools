@@ -76,7 +76,7 @@ async def get_shici():
                 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
             }
             sentence_response = await client.get(sentence_url, headers=headers)
-            Log.debug(headers)
+            # Log.debug(headers)
             if sentence_response.status_code == 200:
                 sentence_data = sentence_response.json().get('data')
 
