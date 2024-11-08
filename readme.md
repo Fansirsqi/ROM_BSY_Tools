@@ -19,3 +19,11 @@
 - Liunx
 
 ## ...wait for perfect
+
+### To do
+
+- [x] 支持解压卡刷ROM文件
+- [ ] 支持`.br/.dat .transfer.list`转`.img`镜像文件
+- [ ] 支持解包,打包`system.img`镜像文件
+- [ ] 支持更多语言
+- [ ] Add more help
