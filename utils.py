@@ -45,18 +45,20 @@ def trans_str(_str):
     return result
 
 
-def show_banner():
+def show_banner(cache=None):
     """打印标题"""
     try:
         with open(f'{config.banner_path}', mode='r', encoding='utf-8') as b:
             _print(b.read(), color='green')
-            category = 'a'
-            quote = asyncio.run(get_shici())  # 使用 asyncio.run 调用异步方法
-
+            if not cache:
+                quote = asyncio.run(get_shici())  # 使用 asyncio.run 调用异步方法
+            else:
+                quote = cache
             print('{:>45}'.format(''), end='')
             _print(f'{config.version_desc} {config.version}', bgcolor='blue', color='white', font_weight='bold', end='')
             print('{:<10}'.format(''))
             _print(quote, color='white', font_weight='bold italic')
+            return quote
     except FileNotFoundError:
         _print('Banner 文件未找到', color='red')
 
@@ -93,7 +95,7 @@ def get_project_list(exclude_folders=None) -> list:
         return []
 
 
-def list_rom_files(file_types=('*.zip', '*.gz', '*.tar')):
+def show_rom_files(file_types=('*.zip', '*.gz', '*.tar')):
     """列出指定后缀的文件"""
     # 获取当前工作目录
     current_dir = os.getcwd()
@@ -111,7 +113,8 @@ def list_rom_files(file_types=('*.zip', '*.gz', '*.tar')):
         _print('未找到任何匹配的文件', color='red')
     else:
         for count, file in enumerate(zip_files, start=1):
-            _print(f'  {count}. {file}', color='magenta')
+            _print(f'  {count}. {file}', color='green', font_weight='bold')
+            _print()
 
     return zip_files
 
@@ -126,7 +129,7 @@ def clear():
         os.system('clear')
 
 
-def get_selected(text='请输选择：'):
+def get_selected(text='请选择：'):
     """获取输入信息"""
     try:
         _select = str(input(f'\033[1;33m{text}\033[0m')).strip()
@@ -144,18 +147,10 @@ def get_file_list(project_path):
 
 
 def is_sparse_image(file_path):
-    "判断是否稀疏镜像"
-    # 稀疏镜像的魔术数（前4字节）
+    """判断是否为稀疏镜像"""
     sparse_magic = b'\x3a\xff\x26\xed'
-
-    # 打开文件，读取前4个字节
     with open(file_path, 'rb') as f:
-        file_header = f.read(4)
-
-    # 判断文件头是否等于稀疏镜像的魔术数
-    if file_header == sparse_magic:
-        return True
-    return False
+        return f.read(4) == sparse_magic
 
 
 def decompress_br_file(input_file, output_file):
