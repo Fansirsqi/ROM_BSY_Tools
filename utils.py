@@ -32,11 +32,12 @@ set_terminal_title('My Custom Terminal Title')
 def comming_soon(*tag):
     "施工中"
     try:
-        if tag:
-            raise NotImplementedError(f'{tag}🚧  施工中')
-        raise NotImplementedError('🚧  施工中')
-    except Exception as e:
-        _print(f'发生错误: {e}', color='red')
+        if tag:  # 如果存在标签，抛出异常
+            raise NotImplementedError(f'{tag[0]} 🚧  施工中')  # 只取第一个标签
+        raise NotImplementedError(' 🚧  施工中')  # 无标签时抛出异常
+    except NotImplementedError as e:  # 仅捕获特定的异常
+        _print(f'comming soon: {e}', color='bold yellow\n')
+
 
 
 def trans_str(_str):
@@ -49,15 +50,29 @@ def show_banner(cache=None):
     """打印标题"""
     try:
         with open(f'{config.banner_path}', mode='r', encoding='utf-8') as b:
-            _print(b.read(), color='green')
+            lines = b.readlines()
+            what_banner = config.banner_path.replace('./banners/', '')
+            if what_banner == 'dxy':
+                _style = None
+            elif what_banner == 'tik':
+                _style = 'bold blue'
+            else:
+                _style = 'bold green'
+            for index, line in enumerate(lines):
+                _print(line, end='', style=_style,isText=False)
+                if index == len(lines) - 1:
+                    max_len = len(line)
+                    _print()
             if not cache:
                 quote = asyncio.run(get_shici())  # 使用 asyncio.run 调用异步方法
             else:
                 quote = cache
-            print('{:>45}'.format(''), end='')
-            _print(f'{config.version_desc} {config.version}', bgcolor='blue', color='white', font_weight='bold', end='')
-            print('{:<10}'.format(''))
-            _print(quote, color='white', font_weight='bold italic')
+            if _style is None:
+                max_len = max_len - 29
+            _print('{:>{}}'.format('', max_len - 20), end='')
+            _print(f'{config.version_desc} {config.version}', style='bold white on blue', end='')  # 版本信息
+            _print('{:<{}}'.format('', max_len - 35))
+            _print(quote, style='bold italic white',isText=False)
             return quote
     except FileNotFoundError:
         _print('Banner 文件未找到', color='red')
@@ -68,11 +83,11 @@ def get_project_list(exclude_folders=None) -> list:
     if exclude_folders is None:
         exclude_folders = []
 
-    PDIR = './Projects/'
+    PDIR = config.project_path
     projects = []
 
     try:
-        # 创建目录（如果不存在）
+        # 创建目录(如果不存在)
         os.makedirs(PDIR, exist_ok=True)
     except OSError as os_error:
         _print(f'文件操作失败: {os_error}', color='red')
@@ -112,8 +127,9 @@ def show_rom_files(file_types=('*.zip', '*.gz', '*.tar')):
     if not zip_files:
         _print('未找到任何匹配的文件', color='red')
     else:
-        for count, file in enumerate(zip_files, start=1):
-            _print(f'  {count}. {file}', color='green', font_weight='bold')
+        for count, _file in enumerate(zip_files, start=1):
+            tag = '[已解压]' if (os.path.exists(config.project_path + '/' + _file.replace('.zip', ''))) else '[未解压]'
+            _print(f'  {count}. {_file} {tag}', color='green', font_weight='bold')
             _print()
 
     return zip_files
@@ -121,7 +137,7 @@ def show_rom_files(file_types=('*.zip', '*.gz', '*.tar')):
 
 def clear():
     """清屏"""
-    # 返回系统平台/OS的名称，如Linux，Windows，Java，Darwin
+    # 返回系统平台/OS的名称,如Linux,Windows,Java,Darwin
     system = platform.system()
     if system == 'Windows':
         os.system('cls')
@@ -129,14 +145,14 @@ def clear():
         os.system('clear')
 
 
-def get_selected(text='请选择：'):
+def get_selected(text='请选择:'):
     """获取输入信息"""
     try:
         _select = str(input(f'\033[1;33m{text}\033[0m')).strip()
         Log.debug('用户输入:', _select)
         return _select
     except KeyboardInterrupt:
-        _print('输入无效，请重新输入', color='red')
+        _print('输入无效,请重新输入', color='red')
 
 
 def get_file_list(project_path):
@@ -185,9 +201,9 @@ def work_job(file_list: list):
         for future in concurrent.futures.as_completed(futures_list):
             try:
                 result = future.result()  # 获取线程的返回值
-                print(f'Thread completed with result: {result}')
+                _print(f'Thread completed with result: {result}')
             except Exception as e:
-                print(f'Thread raised an exception: {e}')
+                _print(f'Thread raised an exception: {e}')
 
 
 def dat_to_img(arguments=[]):

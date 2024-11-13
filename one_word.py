@@ -22,7 +22,7 @@ from Log import Log
 from setting import config, config_manager
 
 
-async def get_word(category=None):
+async def get_word(category=None, max_length=40):
     url = 'https://v1.hitokoto.cn/'
     params = {}
 
@@ -35,17 +35,17 @@ async def get_word(category=None):
             response = await client.get(url, params=params)
             if response.status_code == 200:
                 data = response.json()
-                sentence = '\n' + data.get('hitokoto') + '\n' + '{:>40}'.format('') + '----Re: ' + data.get('from') + '\n'
+                sentence = '\n' + data.get('hitokoto') + '\n' + '{:>{}}'.format('', max_length) + '----Re: ' + data.get('from') + '\n'
                 # config.
                 return sentence
             else:
                 return f'Error: Received response code {response.status_code}'
         except Exception:
-            sentence = '\n知否知否，应是绿肥红瘦\n' + '{:>40}'.format('') + '----Re: ' + '如梦令' + '\n'
+            sentence = '\n知否知否，应是绿肥红瘦\n' + '{:>{}}'.format('', max_length) + '----Re: ' + '如梦令' + '\n'
             return sentence
 
 
-async def get_shici():
+async def get_shici(max_length=40):
     token_url = 'https://v2.jinrishici.com/token'
     sentence_url = 'https://v2.jinrishici.com/sentence'
 
@@ -83,12 +83,12 @@ async def get_shici():
                 content = f"{sentence_data.get('content')}"
                 origin = sentence_data.get('origin')
                 title = f"{origin.get('title')}"
-                sentence = f'\n{content}\n{"":>40}----Re: {title}\n'
+                sentence = f'\n{content}\n{"":>{max_length}}[#FFD700]----Re: {title}[/#FFD700]\n'
                 return sentence
 
         except Exception as e:
             Log.debug(e)
-            sentence = '\n知否知否，应是绿肥红瘦\n' + '{:>40}'.format('') + '----Re: ' + '如梦令' + '\n'
+            sentence = '\n知否知否，应是绿肥红瘦\n' + '{:>{}}'.format('', max_length) + '[#FFD700]----Re: ' + '如梦令[/#FFD700]' + '\n'
             return sentence
 
 

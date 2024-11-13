@@ -5,10 +5,11 @@ import os
 
 
 class Setting(BaseModel):
-    banner_path: str = './banners/00'
+    banner_path: str = './banners/tik'
     version: str = 'v1.0.0'
     version_desc: str = 'Alpha Edition'
     config_file: str = './settings.json'
+    project_path: str = './projects'
 
     class Config:
         extra = 'allow'
