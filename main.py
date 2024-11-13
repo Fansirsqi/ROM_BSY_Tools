@@ -4,13 +4,14 @@ from Cprint import _print
 from utils import clear, get_file_list, get_project_list, get_selected, show_rom_files, show_banner, comming_soon, set_terminal_title
 from extract_rom import unzip_file
 from Log import Log
+from setting import config
 
 
 class BSYTOOLS:
     def __init__(self):
         self.cache = None
         self.tool_path = os.getcwd()  # 工具路径
-        self.project_dir: list = get_project_list(exclude_folders=['.venv', '__pycache__', 'Tool', '.git'])  # 项目列表
+        self.all_projects: list = get_project_list(exclude_folders=['.venv', '__pycache__', 'Tool', '.git'])  # 项目列表
         # 设置终端标题
         set_terminal_title('ROM-BSY-TOOLS')
 
@@ -45,7 +46,7 @@ class BSYTOOLS:
             clear()
             _print('\n00 返回上一层\n', color='yellow', font_weight='bold')
             # 执行原始函数
-            _print('\n==========请输入选择对应功能前的数字以选择对应功能==========\n', color='yellow')
+            _print('\n==========请输入选择对应功能前的数字以选择对应功能[bold red][按Enter确定][/bold red]==========\n', color='yellow',isText=False)
             result = func(*args, **kwargs)
 
             return result
@@ -72,57 +73,66 @@ class BSYTOOLS:
         text_width = wcswidth(text)  # 计算文本的实际宽度
         return total_width - text_width
 
+    @tips
     def fun1(self):
         """解压ROM"""
-        while True:
-            clear()
-            _print('\n00 返回上一层\n', color='yellow', font_weight='bold')
-            _print('\n==========请输入选择对应功能前的数字以选择对应功能==========\n', color='yellow')
-            # 执行原始函数
-            try:
-                file_list = show_rom_files()
-                if not file_list:
-                    _print(f'\n!!未找到任何刷机包,请将刷机包移至工具[{self.tool_path}]目录后再执行此功能\n', color='red')
-                    input('按任意键返回至主菜单...')
-                    sleep(3)
-                    return self.main_menu()  # 如果没有ZIP文件，则返回主菜单
-
-                # 使用新的方法进行选择
-                select_index = get_selected()
-                if select_index == '00':
-                    return self.main_menu()
+        # 执行原始函数
+        try:
+            file_list = show_rom_files()
+            if not file_list:
+                _print(f'\n!!未找到任何刷机包,请将刷机包移至工具[{self.tool_path}]目录后再执行此功能\n', color='red')
+                input('按任意键返回至主菜单...')
+                sleep(3)
+                return self.main_menu()  # 如果没有ZIP文件，则返回主菜单
+            # 使用新的方法进行选择
+            selected = get_selected()
+            if selected == '00':
+                return self.main_menu()
+            select_index = int(selected)
+            if select_index > 0:
                 unzip_file(file_list[int(select_index) - 1])
                 _print('解压完成！', color='green')
                 get_selected('按任意键返回至主菜单...')
                 return self.main_menu()  # 解压完成后返回主菜单
-            except IndexError as e:
-                _print(f'发生错误1: {e}', color='#EE3131')  # 捕获其他可能的异常并输出错误信息
+            else:
+                _print('未选择任何文件！', color='red')
                 get_selected('按任意键重新进行选择...')
                 return self.fun1()
-            except Exception as e:
-                _print(f'发生错误2: {e}', color='#EE3131')  # 捕获其他可能的异常并输出错误信息
-                get_selected('按任意键重新进行选择...')
-                return self.fun1()
+        except Exception as e:
+            Log.error(f'发生错误2: {e}')
+            _print('输入错误，请重新输入！', color='red')
+            get_selected('按任意键重新进行选择...')
+            return self.fun1()
 
     @tips
     def fun2(self):
         """显示项目列表"""
         try:
             self.show_menu_name('项目列表')
-            # _print(self.project_dir)
-            # _print()
-            # 显示列表
-            for idx, item in enumerate(self.project_dir, start=1):
-                _print(f'{idx:>3}. {item}', color='#33FFFF', bgcolor=None, font_weight='blod')
+            for idx, item in enumerate(self.all_projects, start=1):
+                # 显示项目名称
+                project_name = os.path.basename(item)
+                _print(f'{idx:>3}. {project_name}', color='#33FFFF', bgcolor=None, font_weight='bold')
             _print()
             # 使用新的方法进行选择
-            selected_project_index = self.selector(len(self.project_dir), '请选择一个项目:', return_func=self.main_menu)
-
-            if selected_project_index:
-                _print(f'你选择了: {selected_project_index}')
-
+            selected = get_selected()
+            if selected == '00':
+                return self.main_menu()
+            select_index = int(selected)
+            if select_index > 0:
+                selected_peroject = self.all_projects[select_index - 1]
+                _print(f'你选择了: {selected_peroject}')
+                self.handle_fun2(selected_peroject)
+            else:
+                _print('未选择任何文件！', color='red')
+                get_selected('按任意键重新进行选择...')
+                return self.fun2()
         except Exception as e:
-            _print(f'发生错误: {e}')
+            error_type = type(e).__name__
+            Log.error(f'发生错误: {e}，错误类型: {error_type}')
+            _print('输入错误，请重新输入！', color='red')
+            get_selected('按任意键重新进行选择...')
+            return self.fun2()
 
     @tips
     def fun3(self):
@@ -141,10 +151,10 @@ class BSYTOOLS:
         _print('待定功能6', color='yellow')
 
     @tips
-    def sub_fun1(self, project_dir):
+    def sub_fun1(self):
         "解压br"
         comming_soon('解包br')
-        files = get_file_list(project_dir)
+        # files = get_file_list(project_dir)
 
     @tips
     def sub_fun2(self):
@@ -178,14 +188,7 @@ class BSYTOOLS:
         set_width = 10  # 设置索引部分的宽度
 
         # 定义颜色列表
-        colors = [
-            '#33FF57',
-            '#33FFFF',
-            '#3357FF',
-            '#FF5733',
-            '#FF9900',
-            '#FF33FF',
-        ]
+        colors = ['#33FF57', '#33FFFF', '#3357FF', '#FF5733', '#FF9900', '#FF33FF']
         self.show_menu_name('功能菜单')
         for idx in range(0, len(self.function_names), 2):
             # 奇数项索引和功能名称
@@ -202,38 +205,34 @@ class BSYTOOLS:
                 right_index = ''
                 right_name = ''
                 right_color = ''  # 没有偶数项时，不使用颜色
-
             # 计算左侧菜单的实际宽度，并生成填充
-            left_part = f'{left_index:>{set_width}}. {left_name}'
-            left_padding = self.calculate_padding(left_part, menu_width)
-
+            left_text = f'{left_index:>{set_width}} {left_name}'
+            left_padding = self.calculate_padding(left_text, menu_width)
             # 打印左侧菜单项
-            _print(f'{left_part}{" " * left_padding}', color=left_color, end='')
-
+            _print(f'{left_text}{" " * left_padding}', color=left_color, end='',isText=False)
             # 如果右侧菜单存在，计算其宽度并打印
             if right_name:
-                right_part = f'{right_index:>{set_width}}. {right_name}'
-                right_padding = self.calculate_padding(right_part, menu_width)
-                _print(f'{right_part}{" " * right_padding}\n', color=right_color)
+                right_text = f'{right_index:>{set_width}} {right_name}'
+                right_padding = self.calculate_padding(right_text, menu_width)
+                _print(f'{right_text}{" " * right_padding}\n', color=right_color,isText=False)
             else:
                 _print()  # 如果没有右侧菜单，则直接换行
 
     @tips
-    def show_sub_functions(self):
+    def show_sub_functions(self, project_dir=None):
         """子菜单"""
         _print()
         menu_width = 30  # 总宽度，包含汉字和填充字符
         set_width = 10  # 设置索引部分的宽度
-
+        if project_dir:
+            _print()
         # 定义颜色列表
-        colors = ['red', 'green', 'yellow', 'blue', 'magenta', 'cyan']
-
+        colors = ['#33FF57', '#33FFFF', '#3357FF', '#FF5733', '#FF9900', '#FF33FF']
         for idx in range(0, len(self.sub_function_names), 2):
             # 奇数项索引和功能名称
             left_index = (idx + 1) * 11
             left_name = self.sub_function_names[idx][0]
             left_color = colors[idx % len(colors)]  # 从颜色列表中循环取颜色
-
             # 偶数项索引和功能名称
             if idx + 1 < len(self.sub_function_names):
                 right_index = (idx + 2) * 11
@@ -243,33 +242,36 @@ class BSYTOOLS:
                 right_index = ''
                 right_name = ''
                 right_color = ''  # 没有偶数项时，不使用颜色
-
             # 计算左侧菜单的实际宽度，并生成填充
-            left_part = f'{left_index:>{set_width}}. {left_name}'
-            left_padding = self.calculate_padding(left_part, menu_width)
-
+            left_text = f'{left_index:>{set_width}} {left_name}'
+            left_padding = self.calculate_padding(left_text, menu_width)
             # 打印左侧菜单项
-            _print(f'{left_part}{" " * left_padding}', color=left_color, end='')
-
+            _print(f'{left_text}{" " * left_padding}', color=left_color, end='',isText=False)
             # 如果右侧菜单存在，计算其宽度并打印
             if right_name:
-                right_part = f'{right_index:>{set_width}}. {right_name}'
-                right_padding = self.calculate_padding(right_part, menu_width)
-                _print(f'{right_part}{" " * right_padding}\n', color=right_color)
+                right_text = f'{right_index:>{set_width}} {right_name}'
+                right_padding = self.calculate_padding(right_text, menu_width)
+                _print(f'{right_text}{" " * right_padding}\n', color=right_color,isText=False)
             else:
                 _print()  # 如果没有右侧菜单，则直接换行
 
-    def handle_fun2(self, select):
+    def handle_fun2(self, project_dir):
         """处理项目选择"""
         try:
-            project_dir = f'{os.getcwd()}\\{self.project_dir[int(select) - 1]}'
             self.show_sub_functions()
-
+            func_dict2 = {'11': self.sub_fun1, '22': self.sub_fun2, '33': self.sub_fun3, '44': self.sub_fun4, '55': self.sub_fun5, '66': self.sub_fun6}
+            # 功能字典，映射用户输入到对应的功能函数
             _print(f'项目路径: {project_dir}')
-            _select = get_selected('请选择功能或项目:').strip()
-            match _select:
+            select = get_selected('请选择功能或项目:').strip()
+            match select:
+                case '11' | '22' | '33' | '44' | '55' | '66':
+                    func_dict2[select]()  # 直接调用对应的功能函数
                 case '00':
-                    self.main_menu()
+                    _print('退出程序', color='blue')
+                    exit(0)
+                case _:
+                    _print(select)
+                    _print("无效的选项",select)
         except Exception as e:
             _print(f'发生错误: {e}', color='red')
 
@@ -281,14 +283,9 @@ class BSYTOOLS:
             self.show_functions()
             # 功能字典，映射用户输入到对应的功能函数
             func_dict = {'11': self.fun1, '22': self.fun2, '33': self.fun3, '44': self.fun4, '55': self.fun5, '66': self.fun6}
-
-            _print('\n00 退出程序\n', color='yellow', font_weight='bold')
-            # 执行原始函数
-            # _print('\n==========请输入选择对应功能前的数字以选择对应功能==========\n', color='yellow')
-
+            _print('\n00 退出程序\n', color='yellow', font_weight='bold',isText=False)
             # 获取用户输入并清理空白字符
             select = get_selected('请选择功能或项目:').strip()
-
             match select:
                 case '11' | '22' | '33' | '44' | '55' | '66':
                     func_dict[select]()  # 直接调用对应的功能函数
@@ -296,8 +293,7 @@ class BSYTOOLS:
                     _print('退出程序', color='blue')
                     exit(0)
                 case _:
-                    _print(select)
-                    self.handle_project_selection(select)
+                    _print("无效的选项",select)
         except KeyboardInterrupt as e:
             _print(f'程序已手动退出 {e}', color='red')
         except AttributeError as e:
