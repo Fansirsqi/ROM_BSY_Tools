@@ -1,5 +1,5 @@
 <span style="align:center">
-<img src="https://socialify.git.ci/Fansirsqi/ROM_BSY_Tools/image?description=1&descriptionEditable=%E5%AE%89%E5%8D%93Rom%E9%95%9C%E5%83%8F%E8%A7%A3%E5%8C%85%E5%B7%A5%E5%85%B7%E6%89%93%E5%8C%85&font=Jost&issues=1&language=1&name=1&owner=1&pattern=Circuit%20Board&pulls=1&stargazers=1&theme=Dark" alt="ROM_BSY_Tools" width="640" height="320" />
+<img src="https://socialify.git.ci/Fansirsqi/ROM_BSY_Tools/image?description=1&descriptionEditable=%E5%AE%89%E5%8D%93Rom%E9%95%9C%E5%83%8F%E8%A7%A3%E5%8C%85%E5%B7%A5%E5%85%B7%E6%89%93%E5%8C%85&font=Jost&issues=1&language=1&name=1&owner=1&pattern=Circuit%20Board&pulls=1&stargazers=1&theme=Light" alt="ROM_BSY_Tools" width="640" height="320" />
 </span>
 
 # BSY ROM TOOLS Project
